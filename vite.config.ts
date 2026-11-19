@@ -6,9 +6,8 @@ import {defineConfig} from 'vite';
 import {VitePWA} from 'vite-plugin-pwa';
 
 export default defineConfig(() => {
-  return {
-    plugins: [
-      react(),
+  base: '/Folio Games /'
+    plugins: [react()],
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
