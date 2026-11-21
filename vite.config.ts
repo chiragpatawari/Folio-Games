@@ -19,7 +19,8 @@ export default defineConfig(({ mode }) => {
           description: 'Daily Puzzle Folio - Sudoku, Crossword, and Word Search',
           theme_color: '#ffffff',
           background_color: '#ffffff',
-          display: 'standalone',
+          display: 'fullscreen',
+          orientation: 'portrait',
           start_url: '/',
           icons: [
             {
