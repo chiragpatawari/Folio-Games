@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { GoogleGenAI, Type } from '@google/genai';
 import {
   Download,
   Gamepad2,
@@ -62,27 +63,66 @@ export function CreateGameTab() {
     setIsGenerating(true);
 
     try {
-      const response = await fetch('/api/generate-game', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: trimmed,
-          currentHtml: generatedHtml || undefined,
-          history: nextHistory
-            .filter((m) => m.id !== 'welcome')
-            .map((m) => ({ role: m.role, content: m.content })),
-        }),
+      const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+      if (!apiKey) {
+        throw new Error('Missing GEMINI_API_KEY in Vercel Environment Variables.');
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+
+      const conversationContext = nextHistory
+        .filter((m) => m.id !== 'welcome')
+        .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
+        .join('\n');
+
+      const fullPrompt = [
+        'Build a complete, self-contained, playable single-file HTML5 game (with inline CSS and JavaScript inside <!DOCTYPE html><html>...</html>).',
+        'Make sure it fits cleanly inside an iframe, supports both touch/click and keyboard controls, has crisp minimalist styling, and requires zero external assets.',
+        generatedHtml
+          ? `Here is the current HTML game code to modify based on the user request:\n\`\`\`html\n${generatedHtml}\n\`\`\``
+          : '',
+        `Conversation history:\n${conversationContext}`,
+        `Latest user request: ${trimmed}`,
+      ]
+        .filter(Boolean)
+        .join('\n\n');
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: fullPrompt,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              title: {
+                type: Type.STRING,
+                description: 'Short catchy title for the game',
+              },
+              summary: {
+                type: Type.STRING,
+                description: 'One sentence summary of how to play or what changed',
+              },
+              html: {
+                type: Type.STRING,
+                description:
+                  'Complete self-contained HTML5 document starting with <!DOCTYPE html> with inline CSS and JS',
+              },
+            },
+            required: ['title', 'summary', 'html'],
+          },
+        },
       });
 
-      const data = (await response.json()) as {
+      const rawText = response.text || '';
+      const data = JSON.parse(rawText) as {
         title?: string;
         summary?: string;
         html?: string;
-        error?: string;
       };
 
-      if (!response.ok || !data.html) {
-        throw new Error(data.error || 'Unable to generate game.');
+      if (!data.html) {
+        throw new Error('Unable to generate game HTML.');
       }
 
       setGameTitle(data.title || 'Custom Game');
@@ -239,7 +279,7 @@ export function CreateGameTab() {
               }
               className="flex-1 resize-none rounded-lg border border-[#E2DED5] bg-white px-3 py-2 text-sm text-[#18181B] placeholder:text-[#78716C] focus:outline-2 focus:outline-[#18181B]"
             />
-            <button
+                      <button
               type="submit"
               disabled={isGenerating || !input.trim()}
               aria-label="Send prompt"
