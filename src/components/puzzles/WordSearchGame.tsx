@@ -405,6 +405,11 @@ export function WordSearchGame({
             )}
           </div>
         </div>
+                  {!isLocked && (
+            <p className="text-xs font-medium text-[#18181B] bg-[#FAF9F6] border border-[#E2DED5] rounded-lg px-3.5 py-2.5 text-center">
+              To play Word Search, tap the first letter and then tap the last letter of a word (or drag across the letters).
+            </p>
+          )}
 
         {/* Word List & Controls */}
         <div className="space-y-5">
