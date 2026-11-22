@@ -88,7 +88,7 @@ export function CreateGameTab() {
         .join('\n\n');
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3.5-flash-lite',
         contents: fullPrompt,
         config: {
           responseMimeType: 'application/json',
